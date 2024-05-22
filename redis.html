@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redis Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input[type="text"], select {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Redis Clone</h1>
+    <form id="redisForm">
+        <select id="command" required>
+            <option value="" disabled selected>Select Command</option>
+            <option value="set">SET</option>
+            <option value="get">GET</option>
+            <option value="setex">SETEX</option>
+            <option value="lpush">LPUSH</option>
+            <option value="blpop">BLPOP</option>
+        </select>
+        <input type="text" id="key" placeholder="Key" required>
+        <input type="text" id="value" placeholder="Value (if applicable)">
+        <input type="text" id="seconds" placeholder="Seconds (for SETEX and BLPOP)">
+        <button type="submit">Execute</button>
+    </form>
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+    const form = document.getElementById('redisForm');
+    const resultDiv = document.getElementById('result');
+    const submitButton = document.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Executing...';
+
+        const command = document.getElementById('command').value;
+        const key = document.getElementById('key').value;
+        const value = document.getElementById('value').value;
+        const seconds = document.getElementById('seconds').value;
+
+        let url = '';
+        let params = new URLSearchParams();
+
+        switch(command) {
+            case 'set':
+                url = 'http://localhost:8080/set';
+                params.append('key', key);
+                params.append('value', value);
+                break;
+            case 'get':
+                url = 'http://localhost:8080/get';
+                params.append('key', key);
+                break;
+            case 'setex':
+                url = 'http://localhost:8080/setex';
+                params.append('key', key);
+                params.append('value', value);
+                params.append('seconds', seconds);
+                break;
+            case 'lpush':
+                url = 'http://localhost:8080/lpush';
+                params.append('key', key);
+                params.append('value', value);
+                break;
+            case 'blpop':
+                url = 'http://localhost:8080/blpop';
+                params.append('key', key);
+                params.append('timeout', seconds);
+                break;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: params
+            });
+
+            const result = await response.text();
+            resultDiv.innerText = result;
+        } catch (error) {
+            console.error('Error:', error);
+            resultDiv.innerText = 'An error occurred';
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Execute';
+        }
+    });
+</script>
+
+</body>
+</html>
