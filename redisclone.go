@@ -76,12 +76,24 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	expData, ok := dataStore[key]
 	mu.Unlock()
-	if !ok {
+	now := time.Now()
+	duration := expData.expiry.Sub(now)
+	seconds := duration.Seconds()
+	if ok && expData.expiry.IsZero() {
+		fmt.Fprintf(w, "The value is : %s ", expData.value)
+		return
+
+	}
+	if time.Now().After(expData.expiry) {
 		http.Error(w, "The key is not present in the dictionary", http.StatusNotFound)
 		return
 	}
+	if time.Now().Before(expData.expiry) {
+		fmt.Fprintf(w, "The value : %s go to expiry in %d s ", expData.value, int(seconds))
+		return
 
-	fmt.Fprintf(w, expData.value)
+	}
+
 }
 
 func setexHandler(w http.ResponseWriter, r *http.Request) {
@@ -171,6 +183,7 @@ func blpopHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			select {
 			case data := <-data:
+
 				ch <- data
 			}
 		}()
@@ -187,6 +200,7 @@ func blpopHandler(w http.ResponseWriter, r *http.Request) {
 		item := list.items[0]
 		list.items = list.items[1:]
 		queue[key] = list
+
 		fmt.Fprintf(w, "The value is %s", item)
 		return
 	}
